@@ -1,0 +1,5 @@
+wait-for-it
+psycopg2
+Django
+djangorestframework
+django-filter

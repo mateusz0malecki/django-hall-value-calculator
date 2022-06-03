@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+
+  app:
+    container_name: app
+    build: ./project
+    command: bash -c "wait-for-it --service db:5432 && python"
+    tty: True
+    volumes:
+      - ./project:/project
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hall_calc
+    ports:
+      - "5432:5432"
+
+volumes:
+  db_data:
