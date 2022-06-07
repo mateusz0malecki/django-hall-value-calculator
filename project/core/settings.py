@@ -128,6 +128,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
+# CUSTOM USER
+
+AUTH_USER_MODEL = 'api.User'
+
+
 # Rest framework
 
 REST_FRAMEWORK = {

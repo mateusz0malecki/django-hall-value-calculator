@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Hall, MaterialsPrices, MaterialsAmount
+from .models import Hall, MaterialsPrices, MaterialsAmount, User
 
 
 class MaterialsForProject(admin.TabularInline):
@@ -24,3 +24,8 @@ class MaterialsPricesAdmin(admin.ModelAdmin):
 class MaterialsAmountAdmin(admin.ModelAdmin):
     list_display = ['amount_id', 'project', 'material', 'amount']
     list_filter = ['material', 'project']
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ['username', 'email', 'is_staff', 'is_active', 'email_verified', 'date_joined']

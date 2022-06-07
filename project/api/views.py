@@ -5,9 +5,7 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 
-from django.contrib.auth.models import User
-
-from .models import Hall, MaterialsPrices, MaterialsAmount
+from .models import Hall, MaterialsPrices, MaterialsAmount, User
 from .serializers import UserSerializer, HallSerializer, MaterialsPricesSerializer, MaterialsAmountSerializer, \
     ChangePasswordSerializer
 
@@ -125,6 +123,9 @@ class HallViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['GET'])
     def calculate(self):
+        """
+        Business logic here.
+        """
         hall = self.get_object()
         materials = MaterialsAmount.objects.filter(project=hall.project_id)
         value = float(hall.length) * float(hall.width) * 833.33
