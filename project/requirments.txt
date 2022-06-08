@@ -1,4 +1,5 @@
 wait-for-it
+python-dotenv
 psycopg2
 Django
 djangorestframework
