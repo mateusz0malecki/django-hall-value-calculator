@@ -1,13 +1,12 @@
 from django.db import models
 from django.conf import settings
-from django.dispatch import receiver
-from django.db.models.signals import post_save
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.models import PermissionsMixin, AbstractBaseUser, UserManager
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-from rest_framework.authtoken.models import Token
+import jwt
+from datetime import datetime, timedelta
 
 
 class MyUserManager(UserManager):
@@ -86,12 +85,18 @@ class User(PermissionsMixin, AbstractBaseUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
 
-
-# Creates token for new user
-@receiver(post_save, sender=User)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
+    @property
+    def token(self):
+        token = jwt.encode(
+            {
+                'username': self.username,
+                'email': self.email,
+                'exp': datetime.utcnow() + timedelta(hours=24)
+            },
+            settings.SECRET_KEY,
+            algorithm='HS256'
+        )
+        return token
 
 
 class MaterialsPrices(models.Model):

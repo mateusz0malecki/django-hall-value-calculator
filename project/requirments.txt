@@ -1,5 +1,7 @@
 wait-for-it
 python-dotenv
+coverage
+pyjwt
 psycopg2
 Django
 djangorestframework

@@ -2,11 +2,23 @@ from rest_framework import serializers
 from .models import Hall, MaterialsPrices, MaterialsAmount, User
 
 
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'username',
+            'password',
+            'token',
+        ]
+        extra_kwargs = {'password': {'required': True, 'write_only': True}}
+        read_only_fields = ['token']
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
             'username',
             'email',
             'password',

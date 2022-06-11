@@ -1,19 +1,32 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.response import Response
+from rest_framework.generics import GenericAPIView
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 
+from django.contrib.auth import authenticate
+
+from .jwt import JWTAuthentication
 from .models import Hall, MaterialsPrices, MaterialsAmount, User
 from .serializers import UserSerializer, HallSerializer, MaterialsPricesSerializer, MaterialsAmountSerializer, \
-    ChangePasswordSerializer
+    ChangePasswordSerializer, LoginSerializer
 
 
-class HallSetPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'page'
-    max_page_size = 100
+class LoginView(GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        email = request.data.get('email', None)
+        password = request.data.get('password', None)
+
+        user = authenticate(username=email, password=password)
+
+        if user:
+            serializer = self.serializer_class(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({'message': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -21,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
     User views with various permissions and querysets - depends on REST method.
     """
     queryset = User.objects.all().order_by('-date_joined')
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
 
     def get_serializer_class(self):
         if self.action in ['update']:
@@ -61,6 +74,12 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class HallSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page'
+    max_page_size = 100
+
+
 class HallViewSet(viewsets.ModelViewSet):
     """
     Halls views.
@@ -68,7 +87,7 @@ class HallViewSet(viewsets.ModelViewSet):
     """
     queryset = Hall.objects.all()
     serializer_class = HallSerializer
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     filter_fields = ['project_id', 'salesman', 'calculated_value']
@@ -143,8 +162,8 @@ class MaterialsPricesViewSet(viewsets.ModelViewSet):
     """
     queryset = MaterialsPrices.objects.all()
     serializer_class = MaterialsPricesSerializer
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
 
 class MaterialsAmountViewSet(viewsets.ModelViewSet):
@@ -154,8 +173,8 @@ class MaterialsAmountViewSet(viewsets.ModelViewSet):
     """
     queryset = MaterialsAmount.objects.all()
     serializer_class = MaterialsAmountSerializer
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         project_id = self.request.query_params.get('project_id', None)
