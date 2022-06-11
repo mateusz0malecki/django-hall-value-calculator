@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Hall, MaterialsPrices, MaterialsAmount, User
 
 
-class LoginSerializer(serializers.ModelSerializer):
+class LoginRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [

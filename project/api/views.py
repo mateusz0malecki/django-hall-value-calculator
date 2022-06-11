@@ -1,21 +1,25 @@
 from rest_framework import viewsets, filters, status
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
+from rest_framework import mixins
 
 from django.contrib.auth import authenticate
 
 from .jwt import JWTAuthentication
 from .models import Hall, MaterialsPrices, MaterialsAmount, User
 from .serializers import UserSerializer, HallSerializer, MaterialsPricesSerializer, MaterialsAmountSerializer, \
-    ChangePasswordSerializer, LoginSerializer
+    ChangePasswordSerializer, LoginRegisterSerializer
 
 
 class LoginView(GenericAPIView):
-    serializer_class = LoginSerializer
+    """
+    Login view - here user gets auth token.
+    """
+    serializer_class = LoginRegisterSerializer
 
     def post(self, request):
         email = request.data.get('email', None)
@@ -29,9 +33,33 @@ class LoginView(GenericAPIView):
         return Response({'message': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class RegisterView(GenericAPIView):
     """
-    User views with various permissions and querysets - depends on REST method.
+    Register view - also provides first auth token, ready to use.
+    """
+    serializer_class = LoginRegisterSerializer
+
+    @staticmethod
+    def post(request):
+        serializer = LoginRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = User.objects.create_user(
+                username=request.data['username'],
+                email=request.data['email'],
+                password=request.data['password'],
+            )
+            serializer = LoginRegisterSerializer(user, many=False)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin,
+                  mixins.ListModelMixin,
+                  GenericViewSet):
+    """
+    User views with various permissions and querysets - depends on method.
     """
     queryset = User.objects.all().order_by('-date_joined')
     authentication_classes = [JWTAuthentication]
@@ -46,8 +74,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['retrieve', 'update']:
             permission_classes = [IsAuthenticated]
-        elif self.action in ['create']:
-            permission_classes = [AllowAny]
         else:
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
@@ -90,18 +116,12 @@ class HallViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    filter_fields = ['project_id', 'salesman', 'calculated_value']
-    search_fields = ['project_id', '@salesman']
+    search_fields = ['project_id', '@salesman', 'calculated_value', 'roof_slope']
     ordering = ['-project_id']
     pagination_class = HallSetPagination
 
     def get_queryset(self):
-        user = self.request.user.id
-        if user:
-            halls = Hall.objects.filter(salesman=user)
-            return halls
-        halls = Hall.objects.all()
-        return halls
+        return Hall.objects.filter(salesman=self.request.user)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -164,6 +184,7 @@ class MaterialsPricesViewSet(viewsets.ModelViewSet):
     serializer_class = MaterialsPricesSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['material', 'price']
 
 
 class MaterialsAmountViewSet(viewsets.ModelViewSet):
@@ -175,6 +196,7 @@ class MaterialsAmountViewSet(viewsets.ModelViewSet):
     serializer_class = MaterialsAmountSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['project', 'material']
 
     def get_queryset(self):
         project_id = self.request.query_params.get('project_id', None)
