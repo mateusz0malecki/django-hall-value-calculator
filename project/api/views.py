@@ -129,7 +129,7 @@ class HallViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = HallSerializer(data=request.data)
+        serializer = HallSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             hall = Hall.objects.create(
                 salesman=self.request.user,
@@ -139,7 +139,7 @@ class HallViewSet(viewsets.ModelViewSet):
                 roof_slope=request.data['roof_slope'],
             )
             serializer = HallSerializer(hall, many=False)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
@@ -152,13 +152,13 @@ class HallViewSet(viewsets.ModelViewSet):
             hall.roof_slope = request.data['roof_slope']
             hall.save()
             serializer = HallSerializer(hall, many=False)
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
         hall = self.get_object()
         hall.delete()
-        return Response(data='Project deleted.')
+        return Response(data='Project deleted.', status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['GET'])
     def calculate(self):
