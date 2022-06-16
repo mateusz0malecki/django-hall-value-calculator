@@ -3,7 +3,7 @@ from rest_framework import routers
 from .views import RegisterView, LoginView, MaterialsPricesViewSet, MaterialsAmountViewSet, HallViewSet, UserViewSet
 
 
-router = routers.DefaultRouter()
+router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'users', UserViewSet, basename='users')
 router.register(r'halls', HallViewSet, basename='halls')
 router.register(r'prices', MaterialsPricesViewSet, basename='prices')

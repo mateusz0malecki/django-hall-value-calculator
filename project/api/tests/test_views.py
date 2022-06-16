@@ -53,23 +53,48 @@ class TestHallViewSet(APITestHallHelper):
     def test_get_one_hall(self):
         self.authenticate()
         helper = self.create_hall()
-        response = self.client.get(reverse('halls-detail', kwargs={'project_id': helper.data['project_id']}))
-        hall = Hall.objects.get(id=helper.data['project_id'])
+        response = self.client.get(f"/api/halls/{helper.data['project_id']}")
+        hall = Hall.objects.get(project_id=helper.data['project_id'])
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(hall.roof_slope, response.data['roof_slope'])
-
-    def test_update_one_hall(self):
-        self.authenticate()
-        helper = self.create_hall()
-        response = self.client.patch(reverse('halls-detail', kwargs={'project_id': helper.data['project_id']}),
-                                     {'roof_slope': 10})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Hall.objects.get(id=helper.data['project_id']).roof_slope, 10)
 
     def test_delete_one_hall(self):
         self.authenticate()
         helper = self.create_hall()
         prev_db_count = Hall.objects.count()
-        response = self.client.delete(reverse('halls-detail', kwargs={'project_id': helper.data['project_id']}))
+        response = self.client.delete(f"/api/halls/{helper.data['project_id']}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(prev_db_count, Hall.objects.count()+1)
+
+    def test_update_one_hall(self):
+        self.authenticate()
+        helper = self.create_hall()
+        response = self.client.put(f"/api/halls/{helper.data['project_id']}", {
+            'length': 10,
+            'width': 10,
+            'pole_height': 10,
+            'roof_slope': 10,
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Hall.objects.get(project_id=helper.data['project_id']).roof_slope, 10)
+
+    def test_create_hall_invalid_serializer(self):
+        self.authenticate()
+        hall = {
+            "salesman": 1,
+            "length": 5,
+            "width": 5,
+            "pole_height": 5,
+        }
+        response = self.client.post(reverse('halls-list'), hall)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_one_hall_invalid_serializer(self):
+        self.authenticate()
+        helper = self.create_hall()
+        response = self.client.put(f"/api/halls/{helper.data['project_id']}", {
+            'length': 10,
+            'width': 10,
+            'pole_height': 10,
+        })
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
